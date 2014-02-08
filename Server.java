@@ -3,10 +3,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Scanner;
+import java.util.UUID;
 
 /**
  * TODO: Write a blurb about the {@link Server}.
@@ -19,20 +20,21 @@ public class Server {
 
 	private static final String USERNAME_PASSWORD_FILE_PATH = "user_pass.txt";
 	private HashMap<String, String> usernamePasswordDatabase;
-	private ArrayList<ServerThread> serverThreads;
+	private HashMap<String, ServerThread> serverThreads;
 
 	public Server(int portNumber) {
 		// Set username-password combination database
 		usernamePasswordDatabase = getUsernamePasswordDatabase();
 
 		// Start server listener
-		serverThreads = new ArrayList<ServerThread>();
+		serverThreads = new HashMap<String, ServerThread>();
 		try {
 			ServerSocket listener = new ServerSocket(portNumber);
 			try {
 				while (true) {
-					ServerThread thread = new ServerThread(this, listener.accept());
-					serverThreads.add(thread);
+					String threadId = UUID.randomUUID().toString();
+					ServerThread thread = new ServerThread(this, listener.accept(), threadId);
+					serverThreads.put(threadId, thread);
 					thread.start();
 				}
 			} finally {
@@ -43,6 +45,13 @@ public class Server {
 					"could not start server socket listener at port number "
 							+ portNumber, true);
 		}
+	}
+	
+	/**
+	 * Removes a closed connection {@link ServerThread} from {@link HashMap} of server threads.
+	 */
+	public void removeServerThread(String threadId) {
+		serverThreads.remove(threadId);
 	}
 
 	/**
@@ -69,7 +78,11 @@ public class Server {
 
 		else if (clientInput.equals("whoelse")) {
 			// Displays name of other connected users
-			// TODO
+			response = "Connected users:";
+			Iterator<ServerThread> iter = serverThreads.values().iterator();
+			while (iter.hasNext()) {
+				response += NEWLINE + iter.next().getClientUsername();
+			}
 		}
 
 		else if (clientInput.equals("wholastr")) {

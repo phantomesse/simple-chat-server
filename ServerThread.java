@@ -13,6 +13,7 @@ import java.net.Socket;
 public class ServerThread extends Thread {
 	private Server server;
 	private Socket socket;
+	private String threadId;
 	
 	private String clientIpAddress;
 	private String clientUsername;
@@ -20,13 +21,14 @@ public class ServerThread extends Thread {
 	private BufferedReader in;
 	private PrintWriter out;
 
-	public ServerThread(Server server, Socket socket) {
+	public ServerThread(Server server, Socket socket, String threadId) {
 		this.server = server;
 		this.socket = socket;
+		this.threadId = threadId;
 		clientIpAddress = socket.getInetAddress().getHostAddress();
 
 		System.out.println("connection started for client at "
-				+ clientIpAddress);
+				+ clientIpAddress + " (id #" + threadId + ")");
 	}
 
 	public void run() {
@@ -86,7 +88,8 @@ public class ServerThread extends Thread {
 				Utilities.error("could not close the socket", false);
 			}
 			System.out.println("connection closed for client at "
-					+ clientIpAddress);
+					+ clientIpAddress + " (id #" + threadId + ")");
+			server.removeServerThread(threadId);
 		}
 	}
 	
