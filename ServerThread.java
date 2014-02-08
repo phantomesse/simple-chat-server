@@ -13,7 +13,10 @@ import java.net.Socket;
 public class ServerThread extends Thread {
 	private Server server;
 	private Socket socket;
+	
 	private String clientIpAddress;
+	private String clientUsername;
+	
 	private BufferedReader in;
 	private PrintWriter out;
 
@@ -22,7 +25,8 @@ public class ServerThread extends Thread {
 		this.socket = socket;
 		clientIpAddress = socket.getInetAddress().getHostAddress();
 
-		System.out.println("connection started for client at " + clientIpAddress);
+		System.out.println("connection started for client at "
+				+ clientIpAddress);
 	}
 
 	public void run() {
@@ -31,19 +35,20 @@ public class ServerThread extends Thread {
 			in = new BufferedReader(new InputStreamReader(
 					socket.getInputStream()));
 			out = new PrintWriter(socket.getOutputStream(), true);
-			
+
 			// Authenticate user
 			boolean authenticated = false;
 			int tries = 0;
 			do {
 				out.println("Username: ");
-				String username = in.readLine();
+				clientUsername = in.readLine();
 				out.println("Password: ");
 				String password = in.readLine();
-				if (server.authenticateUsernamePassword(username, password)) {
+				if (server.authenticateUsernamePassword(clientUsername, password)) {
 					// User authenticated!
 					out.println(Server.NEWLINE
-							+ "Welcome to simple chat server!" + Server.NEWLINE + "Command: ");
+							+ "Welcome to simple chat server!" + Server.NEWLINE
+							+ Server.NEWLINE + "Command: ");
 					authenticated = true;
 				} else {
 					// User not authenticated
@@ -51,7 +56,7 @@ public class ServerThread extends Thread {
 					if (++tries == 3) {
 						// Third try
 						out.println(Server.EXIT);
-						
+
 						// TODO: Set timeout for this client IP address
 					} else {
 						out.print(" Please try again." + Server.NEWLINE
@@ -67,19 +72,25 @@ public class ServerThread extends Thread {
 				fromClient = fromClient.replaceAll(Server.NEWLINE, "\n");
 
 				// Interpret client data and come up with correct response
-				String toClient = server.processClientInput(fromClient);
+				String toClient = server.processClientInput(this, fromClient);
 				out.println(toClient);
 			}
 
 		} catch (IOException e) {
-			Utilities.error("error handling client at " + clientIpAddress, false);
+			Utilities.error("error handling client at " + clientIpAddress,
+					false);
 		} finally {
 			try {
 				socket.close();
 			} catch (IOException e) {
 				Utilities.error("could not close the socket", false);
 			}
-			System.out.println("connection closed for client at " + clientIpAddress);
+			System.out.println("connection closed for client at "
+					+ clientIpAddress);
 		}
+	}
+	
+	public String getClientUsername() {
+		return clientUsername;
 	}
 }
