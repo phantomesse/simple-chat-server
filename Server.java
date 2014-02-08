@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.Scanner;
 import java.util.UUID;
 
@@ -33,7 +34,8 @@ public class Server {
 			try {
 				while (true) {
 					String threadId = UUID.randomUUID().toString();
-					ServerThread thread = new ServerThread(this, listener.accept(), threadId);
+					ServerThread thread = new ServerThread(this,
+							listener.accept(), threadId);
 					serverThreads.put(threadId, thread);
 					thread.start();
 				}
@@ -46,9 +48,10 @@ public class Server {
 							+ portNumber, true);
 		}
 	}
-	
+
 	/**
-	 * Removes a closed connection {@link ServerThread} from {@link HashMap} of server threads.
+	 * Removes a closed connection {@link ServerThread} from {@link HashMap} of
+	 * server threads.
 	 */
 	public void removeServerThread(String threadId) {
 		serverThreads.remove(threadId);
@@ -61,7 +64,8 @@ public class Server {
 	 *            input from client
 	 * @return server's response
 	 */
-	public String processClientInput(ServerThread serverThread, String clientInput) {
+	public String processClientInput(ServerThread serverThread,
+			String clientInput) {
 		clientInput = clientInput.toLowerCase();
 
 		String response = "";
@@ -78,10 +82,19 @@ public class Server {
 
 		else if (clientInput.equals("whoelse")) {
 			// Displays name of other connected users
-			response = "Connected users:";
-			Iterator<ServerThread> iter = serverThreads.values().iterator();
+			Iterator<Entry<String, ServerThread>> iter = serverThreads
+					.entrySet().iterator();
 			while (iter.hasNext()) {
-				response += NEWLINE + iter.next().getClientUsername();
+				Entry<String, ServerThread> entry = iter.next();
+				if (!entry.getKey().equals(serverThread.getThreadId())) {
+					response += NEWLINE + entry.getValue().getClientUsername();
+				}
+			}
+			
+			if (response.length() == 0) {
+				response = "There's no one else here!";
+			} else {
+				response = response.substring(NEWLINE.length());
 			}
 		}
 
@@ -122,9 +135,10 @@ public class Server {
 				|| clientInput.startsWith("hi")
 				|| clientInput.startsWith("hey")) {
 			// Responds with a random greeting
-			String[] greetings = { "Hi", "Hello", "Greetings", "Howdy",
-					"Hey", "Yo" };
-			response = greetings[(int) (Math.random() * greetings.length)] + " " + serverThread.getClientUsername() + "!";
+			String[] greetings = { "Hi", "Hello", "Greetings", "Howdy", "Hey",
+					"Yo" };
+			response = greetings[(int) (Math.random() * greetings.length)]
+					+ " " + serverThread.getClientUsername() + "!";
 		}
 
 		else {

@@ -93,7 +93,21 @@ public class ServerThread extends Thread {
 		}
 	}
 	
+	/**
+	 * Returns the username of the currently connected client.
+	 * 
+	 * @return username
+	 */
 	public String getClientUsername() {
 		return clientUsername;
+	}
+	
+	/**
+	 * Returns the UUID of this <code>ServerThread</code>.
+	 * 
+	 * @return UUID of this thread
+	 */
+	public String getThreadId() {
+		return threadId;
 	}
 }
