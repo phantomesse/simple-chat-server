@@ -16,10 +16,7 @@ import java.util.UUID;
  * @author Lauren Zou
  */
 public class Server {
-	public static final String EXIT = "<exit>";
-	public static final String NEWLINE = "<br>";
-
-	private static final String USERNAME_PASSWORD_FILE_PATH = "user_pass.txt";
+private static final String USERNAME_PASSWORD_FILE_PATH = "user_pass.txt";
 	private HashMap<String, String> usernamePasswordDatabase;
 	private HashMap<String, ServerThread> serverThreads;
 
@@ -86,15 +83,15 @@ public class Server {
 					.entrySet().iterator();
 			while (iter.hasNext()) {
 				Entry<String, ServerThread> entry = iter.next();
-				if (!entry.getKey().equals(serverThread.getThreadId())) {
-					response += NEWLINE + entry.getValue().getClientUsername();
+				if (!entry.getKey().equals(serverThread.getThreadId()) && entry.getValue().getClientUsername() != null) {
+					response += Utilities.NEWLINE + entry.getValue().getClientUsername();
 				}
 			}
 			
 			if (response.length() == 0) {
 				response = "There's no one else here!";
 			} else {
-				response = response.substring(NEWLINE.length());
+				response = response.substring(Utilities.NEWLINE.length());
 			}
 		}
 
@@ -106,7 +103,7 @@ public class Server {
 
 		else if (clientInput.equals("logout")) {
 			// Logout user
-			return "Goodbye!" + EXIT;
+			return "Goodbye!" + Utilities.EXIT;
 		}
 
 		else if (clientInput.startsWith("broadcast")) {
@@ -146,7 +143,7 @@ public class Server {
 			response = "Sorry, I did not understand what you just said.";
 		}
 
-		return response + NEWLINE + NEWLINE + "Command: ";
+		return response + Utilities.NEWLINE + Utilities.NEWLINE + "Command: ";
 	}
 
 	/**

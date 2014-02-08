@@ -29,11 +29,11 @@ public class Client {
 			String fromServer;
 			while ((fromServer = in.readLine()) != null) {
 				// Replace all Server.NEWLINE with newline character
-				fromServer = fromServer.replaceAll(Server.NEWLINE, "\n");
+				fromServer = fromServer.replaceAll(Utilities.NEWLINE, "\n");
 				
 				// Exit if signaled by server
-				if (fromServer.endsWith(Server.EXIT)) {
-					System.out.println(fromServer.substring(0, fromServer.indexOf(Server.EXIT)));
+				if (fromServer.endsWith(Utilities.EXIT)) {
+					System.out.println(fromServer.substring(0, fromServer.indexOf(Utilities.EXIT)));
 					return;
 				}
 				

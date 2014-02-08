@@ -14,10 +14,10 @@ public class ServerThread extends Thread {
 	private Server server;
 	private Socket socket;
 	private String threadId;
-	
+
 	private String clientIpAddress;
 	private String clientUsername;
-	
+
 	private BufferedReader in;
 	private PrintWriter out;
 
@@ -46,23 +46,25 @@ public class ServerThread extends Thread {
 				clientUsername = in.readLine();
 				out.println("Password: ");
 				String password = in.readLine();
-				if (server.authenticateUsernamePassword(clientUsername, password)) {
+				if (server.authenticateUsernamePassword(clientUsername,
+						password)) {
 					// User authenticated!
-					out.println(Server.NEWLINE
-							+ "Welcome to simple chat server!" + Server.NEWLINE
-							+ Server.NEWLINE + "Command: ");
+					out.println(Utilities.NEWLINE
+							+ "Welcome to simple chat server!"
+							+ Utilities.NEWLINE + Utilities.NEWLINE
+							+ "Command: ");
 					authenticated = true;
 				} else {
 					// User not authenticated
 					out.print("Sorry! Incorrect username and password combination.");
 					if (++tries == 3) {
 						// Third try
-						out.println(Server.EXIT);
+						out.println(Utilities.EXIT);
 
 						// TODO: Set timeout for this client IP address
 					} else {
-						out.print(" Please try again." + Server.NEWLINE
-								+ Server.NEWLINE);
+						out.print(" Please try again." + Utilities.NEWLINE
+								+ Utilities.NEWLINE);
 					}
 				}
 			} while (!authenticated && tries < 3);
@@ -70,8 +72,8 @@ public class ServerThread extends Thread {
 			// Communicate with client
 			String fromClient;
 			while ((fromClient = in.readLine()) != null) {
-				// Replace all Protocol.NEWLINE with newline character
-				fromClient = fromClient.replaceAll(Server.NEWLINE, "\n");
+				// Replace all NEWLINE with newline character
+				fromClient = fromClient.replaceAll(Utilities.NEWLINE, "\n");
 
 				// Interpret client data and come up with correct response
 				String toClient = server.processClientInput(this, fromClient);
@@ -92,7 +94,7 @@ public class ServerThread extends Thread {
 			server.removeServerThread(threadId);
 		}
 	}
-	
+
 	/**
 	 * Returns the username of the currently connected client.
 	 * 
@@ -101,7 +103,7 @@ public class ServerThread extends Thread {
 	public String getClientUsername() {
 		return clientUsername;
 	}
-	
+
 	/**
 	 * Returns the UUID of this <code>ServerThread</code>.
 	 * 

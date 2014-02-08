@@ -5,7 +5,9 @@
  * @author Lauren Zou
  */
 public class Utilities {
-
+	public static final String EXIT = "<exit>";
+	public static final String NEWLINE = "<br>";
+	
 	/**
 	 * Parses a port number in the form of a {@link String} into an integer.
 	 * 
