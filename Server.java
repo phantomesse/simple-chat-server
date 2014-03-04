@@ -16,7 +16,7 @@ public class Server {
 	}
 
 	public static final int BLOCK_TIME = 60; // Seconds
-	public static final int LAST_HOUR = 60*60; // Seconds
+	public static final int LAST_HOUR = 60 * 60; // Seconds
 
 	private static final String USER_DATABASE_PATH = "user_pass.txt";
 
@@ -114,7 +114,7 @@ public class Server {
 
 			String str = "";
 			switch (command) {
-			
+
 			case WHOELSE: // Displays name of other connected users
 				Iterator<User> iter = userDatabase.values().iterator();
 				while (iter.hasNext()) {
@@ -131,24 +131,28 @@ public class Server {
 				}
 
 				return str + "\n";
-				
-			case WHOLASTHR: // Displays name of only those users that connected within the last hour
+
+			case WHOLASTHR: // Displays name of only those users that connected
+							// within the last hour
 				iter = userDatabase.values().iterator();
 				while (iter.hasNext()) {
 					User user = iter.next();
-					int timePassedSinceLogin = (int) (((new Date()).getTime() - user.getLastLoggedIn()) / 1000);
-					if (timePassedSinceLogin < LAST_HOUR && !user.getUsername().equals(
+					int timePassedSinceLogin = (int) (((new Date()).getTime() - user
+							.getLastLoggedIn()) / 1000);
+					if (timePassedSinceLogin < LAST_HOUR
+							&& !user.getUsername().equals(
 									currentUser.getUsername())) {
 						str += user.getUsername() + "\n";
 					}
 				}
-				
+
 				if (str.length() == 0) {
-					str = "Nobody was here within the last " + LAST_HOUR + " seconds. :(\n";
+					str = "Nobody was here within the last " + LAST_HOUR
+							+ " seconds. :(\n";
 				}
 
 				return str + "\n";
-				
+
 			case BROADCAST: // Broadcasts <message> to all connected users
 				if (clientInputArray.length < 2) {
 					// Not the right arguments
@@ -159,23 +163,25 @@ public class Server {
 					for (int i = 2; i < clientInputArray.length; i++) {
 						messageStr += " " + clientInputArray[i];
 					}
-					
+
 					// Find all online users
 					LinkedList<User> onlineUsers = new LinkedList<User>();
 					iter = userDatabase.values().iterator();
 					while (iter.hasNext()) {
 						User user = iter.next();
-						if (user.isOnline() && !user.getUsername().equals(
-									currentUser.getUsername())) {
+						if (user.isOnline()
+								&& !user.getUsername().equals(
+										currentUser.getUsername())) {
 							onlineUsers.add(user);
 						}
 					}
-					Message message = new Message(messageStr, currentUser, onlineUsers.toArray(new User[0]));
+					Message message = new Message(messageStr, currentUser,
+							onlineUsers.toArray(new User[0]));
 					sendMessage(message);
 				}
-				
+
 				return str + "\n";
-				
+
 			case MESSAGE:
 				if (clientInputArray.length < 3) {
 					// Not the right arguments
@@ -199,16 +205,61 @@ public class Server {
 					}
 				}
 				return str + "\n";
-				
+
 			case BLOCK:
-				return "Unsupported action.\n\n";
-			
+				if (clientInputArray.length < 2) {
+					// Not the right arguments
+					str = "usage: block <user>";
+				} else {
+					// Check if the user exists
+					User user = userDatabase.get(clientInputArray[1]);
+					if (user == null) {
+						str = clientInputArray[1]
+								+ " is not a valid user.\nPlease try again.\n";
+					} else if (user.getUsername().equals(
+							currentUser.getUsername())) {
+						// Check if the user is not yourself
+						str = "You cannot block yourself, silly!\n";
+					} else {
+						// Block user
+						currentUser.blockUser(user);
+						str = "You have successfully blocked " + clientInputArray[1] + "from sending you messages.\n";
+					}
+				}
+
+				return str + "\n";
+
 			case UNBLOCK:
-				return "Unsupported action.\n\n";
-			
+				if (clientInputArray.length < 2) {
+					// Not the right arguments
+					str = "usage: unblock <user>";
+				} else {
+					// Check if the user exists
+					User user = userDatabase.get(clientInputArray[1]);
+					if (user == null) {
+						str = clientInputArray[1]
+								+ " is not a valid user.\nPlease try again.\n";
+					} else if (user.getUsername().equals(
+							currentUser.getUsername())) {
+						// Check if the user is not yourself
+						str = "Error! You cannot block yourself!\n";
+					} else {
+						// Unblock user
+						boolean unblocked = currentUser.unblockUser(user);
+						if (unblocked) {
+							str = "You have successfully unblocked " + clientInputArray[1] + ".\n";
+						} else {
+							str = "You didn't block " + clientInputArray[1]
+									+ " to begin with!\n";
+						}
+					}
+				}
+
+				return str + "\n";
+
 			case LOGOUT:
 				return "Goodbye" + Utilities.EXIT;
-			
+
 			default:
 				return defaultErrorMessage;
 			}
@@ -227,16 +278,25 @@ public class Server {
 	public void sendMessage(Message message) {
 		User[] toUsers = message.getToUsers();
 		for (User toUser : toUsers) {
+			// Check if toUser has blocked fromUser
+			if (toUser.hasBlocked(message.getFromUser())) {
+				// Alert the fromUser that message could not be sent
+				ServerThread thread = onlineThreads.get(message.getFromUser().getThreadId());
+				thread.print("You cannot send any message to " + toUser.getUsername() + ". You have been blocked by the user.\n");
+				continue;
+			}
+			
 			toUser.addMessage(message);
 
 			if (toUser.isOnline()) {
 				// User is online, so send the message immediately
 				ServerThread thread = onlineThreads.get(toUser.getThreadId());
-				thread.print(message.getFromUser().getUsername() + " says: " + message.getMessage() + "\n\n");
+				thread.print(message.getFromUser().getUsername() + " says: "
+						+ message.getMessage() + "\n\n");
 			}
 		}
 	}
-	
+
 	/**
 	 * Retrives offline messages for a given username.
 	 * 
@@ -245,15 +305,16 @@ public class Server {
 	 */
 	public String getOfflineMessages(String username) {
 		User user = userDatabase.get(username);
-		
+
 		String str = "";
 		Message message = user.popMessage();
 		while (message != null) {
-			str += message.getFromUser().getUsername() + " said: " + message.getMessage() + "\n";
+			str += message.getFromUser().getUsername() + " said: "
+					+ message.getMessage() + "\n";
 			message = user.popMessage();
 		}
-		
-		return str.length() == 0? "No offline messages!\n\n" : str + "\n";
+
+		return str.length() == 0 ? "No offline messages!\n\n" : str + "\n";
 	}
 
 	/**

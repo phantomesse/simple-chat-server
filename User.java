@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -24,6 +25,7 @@ public class User {
 	private final static int MAX_LOGIN_ATTEMPTS = 3;
 
 	private LinkedList<Message> messages;
+	private ArrayList<User> blockedUsers;
 
 	public class UserAlreadyLoggedInException extends Exception {
 		private static final long serialVersionUID = 1L;
@@ -58,6 +60,7 @@ public class User {
 		loginAttempts = new HashMap<String, Integer>();
 
 		this.messages = new LinkedList<Message>();
+		this.blockedUsers = new ArrayList<User>();
 	}
 
 	/**
@@ -193,5 +196,35 @@ public class User {
 	 */
 	public void addMessage(Message message) {
 		messages.add(message);
+	}
+
+	/**
+	 * Adds a <code>User</code> to list of blocked users.
+	 * 
+	 * @param user
+	 */
+	public void blockUser(User user) {
+		blockedUsers.add(user);
+	}
+
+	/**
+	 * Removes a <code>User</code> from list of blocked users.
+	 * 
+	 * @param user
+	 * @return true if successfully unblocked, false if user wasn't in the
+	 *         blocked list to begin with
+	 */
+	public boolean unblockUser(User user) {
+		return blockedUsers.remove(user);
+	}
+	
+	/**
+	 * Checks if a user has been blocked.
+	 * 
+	 * @param user
+	 * @return true if user has been blocked, false otherwise
+	 */
+	public boolean hasBlocked(User user) {
+		return blockedUsers.contains(user);
 	}
 }
