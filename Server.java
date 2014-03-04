@@ -5,6 +5,7 @@ import java.net.ServerSocket;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Scanner;
 import java.util.UUID;
 
@@ -113,6 +114,7 @@ public class Server {
 
 			String str = "";
 			switch (command) {
+			
 			case WHOELSE: // Displays name of other connected users
 				Iterator<User> iter = userDatabase.values().iterator();
 				while (iter.hasNext()) {
@@ -129,8 +131,8 @@ public class Server {
 				}
 
 				return str + "\n";
-			case WHOLASTHR:
 				
+			case WHOLASTHR: // Displays name of only those users that connected within the last hour
 				iter = userDatabase.values().iterator();
 				while (iter.hasNext()) {
 					User user = iter.next();
@@ -146,23 +148,44 @@ public class Server {
 				}
 
 				return str + "\n";
-			case BROADCAST:
+				
+			case BROADCAST: // Broadcasts <message> to all connected users
 				if (clientInputArray.length < 2) {
 					// Not the right arguments
-					str = "usage: broadcast <message>\nPlease try again.\n\n";
+					str = "usage: broadcast <message>\nPlease try again.\n";
+				} else {
+					// Create message
+					String messageStr = clientInputArray[1];
+					for (int i = 2; i < clientInputArray.length; i++) {
+						messageStr += " " + clientInputArray[i];
+					}
+					
+					// Find all online users
+					LinkedList<User> onlineUsers = new LinkedList<User>();
+					iter = userDatabase.values().iterator();
+					while (iter.hasNext()) {
+						User user = iter.next();
+						if (user.isOnline() && !user.getUsername().equals(
+									currentUser.getUsername())) {
+							onlineUsers.add(user);
+						}
+					}
+					Message message = new Message(messageStr, currentUser, onlineUsers.toArray(new User[0]));
+					sendMessage(message);
 				}
 				
-				return "Unsupported action.";
+				return str + "\n";
+				
 			case MESSAGE:
 				if (clientInputArray.length < 3) {
 					// Not the right arguments
-					str = "usage: message <user> <message>\nPlease try again.\n\n";
+					str = "usage: message <user> <message>\nPlease try again.\n";
 				} else {
 					// Check if user exists
 					User toUser = userDatabase.get(clientInputArray[1]);
 					if (toUser == null) {
 						str = clientInputArray[1]
-								+ " is not a valid user.\nPlease try again.\n\n";
+								+ " is not a valid user.\nPlease try again.\n";
 					} else {
 						// Send the message
 						String messageStr = clientInputArray[2];
@@ -175,13 +198,17 @@ public class Server {
 						sendMessage(message);
 					}
 				}
-				return str;
+				return str + "\n";
+				
 			case BLOCK:
 				return "Unsupported action.\n\n";
+			
 			case UNBLOCK:
 				return "Unsupported action.\n\n";
+			
 			case LOGOUT:
 				return "Goodbye" + Utilities.EXIT;
+			
 			default:
 				return defaultErrorMessage;
 			}
