@@ -54,6 +54,19 @@ public class Server {
 		onlineThreads = new HashMap<String, ServerThread>();
 		try {
 			ServerSocket listener = new ServerSocket(portNumber);
+
+			// Handle control+C signal
+			Runtime.getRuntime().addShutdownHook(new Thread() {
+				public void run() {
+					// Send EXIT to clients
+					Iterator<ServerThread> iter = onlineThreads.values().iterator();
+					while (iter.hasNext()) {
+						ServerThread serverThread = iter.next();
+						serverThread.print("Server is shutting down" + Utilities.EXIT);
+					}
+				}
+			});
+
 			try {
 				// Create a thread that checks for time out
 				Thread timeoutCheckerThread = new Thread() {
@@ -328,7 +341,7 @@ public class Server {
 				// Alert the fromUser that message could not be sent
 				ServerThread thread = onlineThreads.get(message.getFromUser()
 						.getThreadId());
-				thread.print("You cannot send any message to "
+				thread.print("You cannot send any messages to "
 						+ toUser.getUsername()
 						+ ". You have been blocked by the user.\n");
 				continue;

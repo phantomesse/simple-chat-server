@@ -67,7 +67,7 @@ public class Client {
 				// Decode message from server
 				String[] fromServerArr = Utilities.decodeMessage(fromServer);
 				fromServer = fromServerArr[1];
-				
+
 				// Force exit if signaled
 				if (fromServer.equals(Utilities.FORCE_EXIT)) {
 					System.exit(0);
@@ -191,7 +191,7 @@ public class Client {
 				// Set focus on input box
 				inputBox.requestFocus();
 			}
-			
+
 			public void windowClosing(WindowEvent e) {
 				// Send message to server that we want to close the client
 				out.println(Utilities.FORCE_EXIT);
@@ -232,31 +232,32 @@ public class Client {
 				// There are emoticons
 
 				String temp = message;
-				
-				Style emoticonStyle = ((StyledDocument) outputBox
-						.getDocument()).addStyle("emoticonStyle", null);
+
+				Style emoticonStyle = ((StyledDocument) outputBox.getDocument())
+						.addStyle("emoticonStyle", null);
 
 				while (emoticon != null) {
 					// Print up to emoticon
 					outputBoxDoc.insertString(outputBoxDoc.getLength(),
 							temp.substring(0, emoticon[0]), style);
-					
+
 					// Print emoticon
 					StyleConstants.setIcon(emoticonStyle, new ImageIcon(
 							EMOTICON_FOLDER_PATH + emoticon[1] + ".png"));
 					outputBoxDoc.insertString(outputBoxDoc.getLength(),
 							EMOTICONS[emoticon[1]], emoticonStyle);
-					
+
 					// Set temp to the rest of the message
-					temp = temp.substring(emoticon[0] + EMOTICONS[emoticon[1]].length());
-					
+					temp = temp.substring(emoticon[0]
+							+ EMOTICONS[emoticon[1]].length());
+
 					// Check again for emoticons
 					emoticon = findEmoticon(temp);
 				}
-				
+
 				// No emoticons, so print normally
-				outputBoxDoc.insertString(outputBoxDoc.getLength(), temp,
-						style);
+				outputBoxDoc
+						.insertString(outputBoxDoc.getLength(), temp, style);
 			}
 		} catch (BadLocationException e) {
 			Utilities.error(e.getMessage());
