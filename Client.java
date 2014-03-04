@@ -15,6 +15,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -23,6 +24,7 @@ import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
@@ -34,6 +36,10 @@ public class Client {
 	private static final Color GUI_FG_COLOR = new Color(255, 192, 215);
 	private static final Color GUI_FG_INPUT_COLOR = new Color(255, 138, 181);
 	private static final Font GUI_FONT = new Font("Consolas", Font.BOLD, 12);
+
+	private static final String EMOTICON_FOLDER_PATH = "emoticons/";
+	private static final String[] EMOTICONS = { ":D", "XD", ":)", ";)", "-.-",
+			">.<", "o.o", ":(" };
 
 	private JTextPane outputBox;
 	private StyledDocument outputBoxDoc;
@@ -193,7 +199,8 @@ public class Client {
 	 * @param style
 	 */
 	private void print(String message, SimpleAttributeSet style) {
-		// Wait until done printing previous messages
+
+		// Wait until printing to output box is done before proceeding
 		while (printing) {
 			try {
 				Thread.sleep(10);
@@ -201,20 +208,79 @@ public class Client {
 				Utilities.error(e.getMessage());
 			}
 		}
-		
-		printing = true;
-		
+
 		// Print
+		String[] messageArr = message.split(" ");
+
+		printing = true;
 		try {
-			outputBoxDoc.insertString(outputBoxDoc.getLength(), message, style);
+			String str = "";
+			for (String messagePart : messageArr) {
+				// Check if message part matches an emoticon
+				int emoticon = matchEmoticon(messagePart);
+				if (emoticon < 0) {
+					// Not an emoticon
+					str += " " + messagePart;
+				} else {
+					// Print whatever is in the str
+					if (str.length() > 0) {
+						outputBoxDoc.insertString(outputBoxDoc.getLength(),
+								str.substring(1), style);
+					}
+
+					// Print emoticon
+					// outputBox.insertIcon(new ImageIcon(EMOTICON_FOLDER_PATH
+					// + emoticon + ".png"));
+
+					Style emoticonStyle = ((StyledDocument) outputBox
+							.getDocument()).addStyle("emoticonStyle", null);
+					StyleConstants.setIcon(emoticonStyle, new ImageIcon(
+							EMOTICON_FOLDER_PATH + emoticon + ".png"));
+					outputBoxDoc.insertString(outputBoxDoc.getLength(),
+							EMOTICONS[emoticon], emoticonStyle);
+
+					// Print rest of emoticon string
+					if (EMOTICONS[emoticon].length() < messagePart.length()) {
+						outputBoxDoc.insertString(outputBoxDoc.getLength(),
+								messagePart.substring(EMOTICONS[emoticon]
+										.length()), style);
+					}
+
+					// Reset str
+					str = "";
+				}
+			}
+
+			// Print str if not empty
+			if (str.length() > 0) {
+				outputBoxDoc.insertString(outputBoxDoc.getLength(),
+						str.substring(1) + (message.endsWith(" ") ? " " : ""),
+						style);
+			}
+
 		} catch (BadLocationException e) {
 			Utilities.error(e.getMessage());
 		}
 
 		// Scroll to bottom
 		outputBox.setCaretPosition(outputBox.getDocument().getLength());
-		
+
 		printing = false;
+	}
+
+	/**
+	 * Matches a string to an emoticon
+	 * 
+	 * @param str
+	 * @return index of emoticon in EMOTICONS array or -1 if does not match
+	 */
+	private int matchEmoticon(String str) {
+		for (int i = 0; i < EMOTICONS.length; i++) {
+			if (EMOTICONS[i].equals(str.trim())) {
+				return i;
+			}
+		}
+		return -1;
 	}
 
 	public static void main(String[] args) {
