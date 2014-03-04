@@ -66,11 +66,16 @@ public class Server {
 								User user = iter.next();
 								if (user.isOnline() && user.getLastActive() > 0) {
 									// Check the last time this user was active
-									int timeSinceLastActive = (int) ((System.currentTimeMillis() - user.getLastActive()) / 1000);
+									int timeSinceLastActive = (int) ((System
+											.currentTimeMillis() - user
+											.getLastActive()) / 1000);
 									if (timeSinceLastActive > TIME_OUT) {
 										// Kick user off
-										ServerThread serverThread = onlineThreads.get(user.getThreadId());
-										serverThread.print("Sorry! You have been inactive for too long" + Utilities.EXIT);
+										ServerThread serverThread = onlineThreads
+												.get(user.getThreadId());
+										serverThread
+												.print("Sorry! You have been inactive for too long"
+														+ Utilities.EXIT);
 									}
 								}
 							}
@@ -172,9 +177,10 @@ public class Server {
 				iter = userDatabase.values().iterator();
 				while (iter.hasNext()) {
 					User user = iter.next();
-					int timePassedSinceLogin = (int) ((System.currentTimeMillis() - user
-							.getLastLoggedIn()) / 1000);
-					int timeSinceLastActive = (int) ((System.currentTimeMillis() - user.getLastActive()) / 1000);
+					int timePassedSinceLogin = (int) ((System
+							.currentTimeMillis() - user.getLastLoggedIn()) / 1000);
+					int timeSinceLastActive = (int) ((System
+							.currentTimeMillis() - user.getLastActive()) / 1000);
 					if ((user.isOnline() || timePassedSinceLogin < LAST_HOUR || timeSinceLastActive < LAST_HOUR)
 							&& !user.getUsername().equals(
 									currentUser.getUsername())) {

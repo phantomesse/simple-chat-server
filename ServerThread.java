@@ -41,8 +41,19 @@ public class ServerThread extends Thread {
 				while (username == null || password == null) {
 					out.println(Utilities.encodeMessage("Username", str));
 					username = in.readLine();
+					if (username != null && username.equals(Utilities.EXIT)) {
+						out.println(Utilities.encodeMessage("", Utilities.FORCE_EXIT));
+						authenticated = true;
+						return;
+					}
+					
 					out.println(Utilities.encodeMessage("Password", ""));
 					password = in.readLine();
+					if (password != null && password.equals(Utilities.EXIT)) {
+						out.println(Utilities.encodeMessage("", Utilities.FORCE_EXIT));
+						authenticated = true;
+						return;
+					}
 				}
 
 				try {
@@ -114,6 +125,13 @@ public class ServerThread extends Thread {
 	 */
 	public String getIpAddress() {
 		return this.ipAddress;
+	}
+	
+	/**
+	 * @return associated socket
+	 */
+	public Socket getSocket() {
+		return this.socket;
 	}
 
 	/**

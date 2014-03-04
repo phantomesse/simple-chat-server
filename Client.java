@@ -67,6 +67,11 @@ public class Client {
 				// Decode message from server
 				String[] fromServerArr = Utilities.decodeMessage(fromServer);
 				fromServer = fromServerArr[1];
+				
+				// Force exit if signaled
+				if (fromServer.equals(Utilities.FORCE_EXIT)) {
+					System.exit(0);
+				}
 
 				// Set prompt
 				prompt.setText(fromServerArr[0] + ":");
@@ -115,7 +120,7 @@ public class Client {
 	private void setupGUI() {
 		// Set up the JFrame
 		JFrame frame = new JFrame("Simple Chat Server");
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		frame.setSize(new Dimension(GUI_WIDTH, GUI_HEIGHT));
 		frame.setLocationRelativeTo(null);
 
@@ -185,6 +190,11 @@ public class Client {
 			public void windowOpened(WindowEvent e) {
 				// Set focus on input box
 				inputBox.requestFocus();
+			}
+			
+			public void windowClosing(WindowEvent e) {
+				// Send message to server that we want to close the client
+				out.println(Utilities.EXIT);
 			}
 		});
 

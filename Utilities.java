@@ -1,5 +1,6 @@
 public class Utilities {
 	public static final String EXIT = "<exit>";
+	public static final String FORCE_EXIT = "<force_exit>";
 	public static final String NEWLINE = "<br>";
 
 	/**
