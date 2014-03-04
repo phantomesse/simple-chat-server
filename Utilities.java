@@ -16,7 +16,7 @@ public class Utilities {
 		return "<prompt>" + prompt + "</prompt><message>" + message
 				+ "</message>";
 	}
-
+	
 	/**
 	 * Decodes a message from the <code>Server</code> to the <code>Client</code>
 	 * .
