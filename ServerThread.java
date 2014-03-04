@@ -41,7 +41,7 @@ public class ServerThread extends Thread {
 				while (username == null || password == null) {
 					out.println(Utilities.encodeMessage("Username", str));
 					username = in.readLine();
-					if (username != null && username.equals(Utilities.EXIT)) {
+					if (username != null && username.equals(Utilities.FORCE_EXIT)) {
 						out.println(Utilities.encodeMessage("", Utilities.FORCE_EXIT));
 						authenticated = true;
 						return;
@@ -49,7 +49,7 @@ public class ServerThread extends Thread {
 					
 					out.println(Utilities.encodeMessage("Password", ""));
 					password = in.readLine();
-					if (password != null && password.equals(Utilities.EXIT)) {
+					if (password != null && password.equals(Utilities.FORCE_EXIT)) {
 						out.println(Utilities.encodeMessage("", Utilities.FORCE_EXIT));
 						authenticated = true;
 						return;
@@ -95,7 +95,12 @@ public class ServerThread extends Thread {
 
 			// Communicate with client
 			String fromClient;
-			while ((fromClient = in.readLine()) != null) {				
+			while ((fromClient = in.readLine()) != null) {
+				// Window close action
+				if (fromClient.equals(Utilities.FORCE_EXIT)) {
+					out.println(Utilities.encodeMessage("", Utilities.FORCE_EXIT));
+				}
+				
 				// Interpret client data and come up with correct response
 				String toClient = server.processClientInput(fromClient, this);
 				out.println(Utilities.encodeMessage("Command", toClient));

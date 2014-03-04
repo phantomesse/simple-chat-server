@@ -194,7 +194,7 @@ public class Client {
 			
 			public void windowClosing(WindowEvent e) {
 				// Send message to server that we want to close the client
-				out.println(Utilities.EXIT);
+				out.println(Utilities.FORCE_EXIT);
 			}
 		});
 
