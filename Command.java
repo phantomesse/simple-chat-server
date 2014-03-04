@@ -1,0 +1,10 @@
+
+public enum Command {
+	WHOELSE,
+	WHOLASTHR,
+	BROADCAST,
+	MESSAGE,
+	BLOCK,
+	UNBLOCK,
+	LOGOUT;
+}

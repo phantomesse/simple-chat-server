@@ -4,112 +4,118 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-/**
- * <code>ServerThread</code> handles the connection between the server and a
- * client.
- * 
- * @author Lauren Zou
- */
 public class ServerThread extends Thread {
-	private Server server;
-	private Socket socket;
 	private String threadId;
+	private Socket socket;
+	private Server server;
 
-	private String clientIpAddress;
-	private String clientUsername;
+	private String ipAddress;
 
 	private BufferedReader in;
 	private PrintWriter out;
 
-	public ServerThread(Server server, Socket socket, String threadId) {
-		this.server = server;
-		this.socket = socket;
+	public ServerThread(String threadId, Socket socket, Server server) {
 		this.threadId = threadId;
-		clientIpAddress = socket.getInetAddress().getHostAddress();
+		this.socket = socket;
+		this.server = server;
+		this.ipAddress = socket.getInetAddress().getHostAddress();
 
-		System.out.println("connection started for client at "
-				+ clientIpAddress + " (id #" + threadId + ")");
+		System.out.println("connection opened for thread #" + threadId + " at "
+				+ ipAddress);
 	}
 
 	public void run() {
 		try {
 			// Set up input and output from socket
-			in = new BufferedReader(new InputStreamReader(
+			this.in = new BufferedReader(new InputStreamReader(
 					socket.getInputStream()));
-			out = new PrintWriter(socket.getOutputStream(), true);
+			this.out = new PrintWriter(socket.getOutputStream(), true);
 
-			// Authenticate user
+			// User authentication
 			boolean authenticated = false;
-			int tries = 0;
 			do {
 				out.println("Username: ");
-				clientUsername = in.readLine();
+				String username = in.readLine();
 				out.println("Password: ");
 				String password = in.readLine();
-				if (server.authenticateUsernamePassword(clientUsername,
-						password)) {
-					// User authenticated!
-					out.println(Utilities.NEWLINE
-							+ "Welcome to simple chat server!"
-							+ Utilities.NEWLINE + Utilities.NEWLINE
-							+ "Command: ");
-					authenticated = true;
-				} else {
-					// User not authenticated
-					out.print("Sorry! Incorrect username and password combination.");
-					if (++tries == 3) {
-						// Third try
-						out.println(Utilities.EXIT);
 
-						// TODO: Set timeout for this client IP address
+				try {
+					authenticated = server.authenticateUser(username, password,
+							this);
+
+					if (authenticated) {
+						// User authenticated!
+						out.println(Server.NEWLINE
+								+ "Welcome to simple chat server!"
+								+ Server.NEWLINE + Server.NEWLINE
+								+ Server.PROMPT);
+						authenticated = true;
 					} else {
-						out.print(" Please try again." + Utilities.NEWLINE
-								+ Utilities.NEWLINE);
+						// User not authenticated
+						out.print("Sorry! Incorrect username and password combination.");
 					}
+
+				} catch (User.UserAlreadyLoggedInException e) {
+					out.print(username + " is already logged in!");
+				} catch (User.IpAddressBlockedException e) {
+					out.println("Sorry! " + username
+							+ " has been blocked from ip address " + ipAddress
+							+ "." + Server.NEWLINE + "Please wait " + e.getSecondsLeft() + " seconds before attempting to login again." + Server.EXIT);
+					break;
 				}
-			} while (!authenticated && tries < 3);
+
+				if (!authenticated) {
+					out.print(" Please try again." + Server.NEWLINE
+							+ Server.NEWLINE);
+				}
+
+			} while (!authenticated);
 
 			// Communicate with client
 			String fromClient;
 			while ((fromClient = in.readLine()) != null) {
 				// Replace all NEWLINE with newline character
-				fromClient = fromClient.replaceAll(Utilities.NEWLINE, "\n");
+				fromClient = fromClient.replaceAll(Server.NEWLINE, "\n");
 
 				// Interpret client data and come up with correct response
-				String toClient = server.processClientInput(this, fromClient);
+				String toClient = server.processClientInput(fromClient, this);
 				out.println(toClient);
 			}
 
 		} catch (IOException e) {
-			Utilities.error("error handling client at " + clientIpAddress,
-					false);
+			Server.error(e.getMessage());
 		} finally {
 			try {
 				socket.close();
 			} catch (IOException e) {
-				Utilities.error("could not close the socket", false);
+				Server.error(e.getMessage());
 			}
-			System.out.println("connection closed for client at "
-					+ clientIpAddress + " (id #" + threadId + ")");
+			System.out.println("connection closed for thread #" + threadId
+					+ " at " + ipAddress);
 			server.removeServerThread(threadId);
 		}
 	}
 
 	/**
-	 * Returns the username of the currently connected client.
-	 * 
-	 * @return username
+	 * @return id of this <code>ServerThread</code>
 	 */
-	public String getClientUsername() {
-		return clientUsername;
+	public String getThreadId() {
+		return this.threadId;
 	}
 
 	/**
-	 * Returns the UUID of this <code>ServerThread</code>.
-	 * 
-	 * @return UUID of this thread
+	 * @return ip address of the connected client
 	 */
-	public String getThreadId() {
-		return threadId;
+	public String getIpAddress() {
+		return this.ipAddress;
+	}
+	
+	/**
+	 * Prints a message to <code>out</code>.
+	 * 
+	 * @param message
+	 */
+	public void print(String message) {
+		out.println(message);
 	}
 }
