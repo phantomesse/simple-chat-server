@@ -32,12 +32,18 @@ public class ServerThread extends Thread {
 			this.out = new PrintWriter(socket.getOutputStream(), true);
 
 			// User authentication
+			String str = "";
 			boolean authenticated = false;
 			do {
-				out.println("Username: ");
-				String username = in.readLine();
-				out.println("Password: ");
-				String password = in.readLine();
+				authenticated = true;
+				
+				String username = null, password = null;
+				while (username == null || password == null) {
+					out.println(Utilities.encodeMessage("Username", str));
+					username = in.readLine();
+					out.println(Utilities.encodeMessage("Password", ""));
+					password = in.readLine();
+				}
 
 				try {
 					authenticated = server.authenticateUser(username, password,
@@ -45,28 +51,29 @@ public class ServerThread extends Thread {
 
 					if (authenticated) {
 						// User authenticated!
-						out.println(Server.NEWLINE
-								+ "Welcome to simple chat server!"
-								+ Server.NEWLINE + Server.NEWLINE
-								+ Server.PROMPT);
-						authenticated = true;
+						out.println(Utilities.encodeMessage("Command",
+								"\nWelcome to simple chat server!\n\n"));
 					} else {
 						// User not authenticated
-						out.print("Sorry! Incorrect username and password combination.");
+						str = "Sorry! Incorrect username and password combination.";
+						authenticated = false;
 					}
 
 				} catch (User.UserAlreadyLoggedInException e) {
-					out.print(username + " is already logged in!");
+					str = username + " is already logged in!";
+					authenticated = false;
 				} catch (User.IpAddressBlockedException e) {
-					out.println("Sorry! " + username
+					str = "Sorry! " + username
 							+ " has been blocked from ip address " + ipAddress
-							+ "." + Server.NEWLINE + "Please wait " + e.getSecondsLeft() + " seconds before attempting to login again." + Server.EXIT);
+							+ ".\nPlease wait " + e.getSecondsLeft()
+							+ " seconds before attempting to login again."
+							+ Utilities.EXIT;
+					out.println(Utilities.encodeMessage("", str));
 					break;
 				}
 
 				if (!authenticated) {
-					out.print(" Please try again." + Server.NEWLINE
-							+ Server.NEWLINE);
+					str += " Please try again!\n\n";
 				}
 
 			} while (!authenticated);
@@ -74,24 +81,21 @@ public class ServerThread extends Thread {
 			// Communicate with client
 			String fromClient;
 			while ((fromClient = in.readLine()) != null) {
-				// Replace all NEWLINE with newline character
-				fromClient = fromClient.replaceAll(Server.NEWLINE, "\n");
-
+				System.out.println("client said: " + fromClient);
+				
 				// Interpret client data and come up with correct response
 				String toClient = server.processClientInput(fromClient, this);
-				out.println(toClient);
+				out.println(Utilities.encodeMessage("Command", toClient));
 			}
 
 		} catch (IOException e) {
-			Server.error(e.getMessage());
+			Utilities.error(e.getMessage());
 		} finally {
 			try {
 				socket.close();
 			} catch (IOException e) {
-				Server.error(e.getMessage());
+				Utilities.error(e.getMessage());
 			}
-			System.out.println("connection closed for thread #" + threadId
-					+ " at " + ipAddress);
 			server.removeServerThread(threadId);
 		}
 	}
@@ -109,7 +113,7 @@ public class ServerThread extends Thread {
 	public String getIpAddress() {
 		return this.ipAddress;
 	}
-	
+
 	/**
 	 * Prints a message to <code>out</code>.
 	 * 

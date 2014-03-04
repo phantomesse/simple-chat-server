@@ -2,17 +2,20 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Scanner;
 import java.util.UUID;
 
 public class Server {
-	public static final String NEWLINE = "<br>";
-	public static final String EXIT = "<exit>";
-	public static final String PROMPT = "Command: ";
+
+	public enum Command {
+		WHOELSE, WHOLASTHR, BROADCAST, MESSAGE, BLOCK, UNBLOCK, LOGOUT;
+	}
 
 	public static final int BLOCK_TIME = 60; // Seconds
+	public static final int LAST_HOUR = 60*60; // Seconds
 
 	private static final String USER_DATABASE_PATH = "user_pass.txt";
 
@@ -41,9 +44,9 @@ public class Server {
 						userPassword[1]));
 			}
 		} catch (FileNotFoundException e) {
-			error(e.getMessage());
+			Utilities.error(e.getMessage());
 		} catch (IndexOutOfBoundsException e) {
-			error(e.getMessage());
+			Utilities.error(e.getMessage());
 		}
 
 		// Start server listener
@@ -60,14 +63,9 @@ public class Server {
 				}
 			} finally {
 				listener.close();
-				
-				// Close online threads
-				for (ServerThread thread : onlineThreads.values()) {
-					thread.print("Server has crashed!" + EXIT);
-				}
 			}
 		} catch (IOException e) {
-			error(e.getMessage());
+			Utilities.error(e.getMessage());
 		}
 	}
 
@@ -76,9 +74,18 @@ public class Server {
 	 * server threads.
 	 */
 	public void removeServerThread(String threadId) {
+		String ipAddress = onlineThreads.get(threadId).getIpAddress();
 		onlineThreads.remove(threadId);
-		User user = getUserFromThreadId(threadId);
-		user.setOffline();
+
+		try {
+			User user = getUserFromThreadId(threadId);
+			user.setOffline();
+		} catch (NullPointerException e) {
+			// Wasn't connected to a user. Don't worry about it.
+		}
+
+		System.out.println("connection closed for thread #" + threadId + " at "
+				+ ipAddress);
 	}
 
 	/**
@@ -92,108 +99,103 @@ public class Server {
 	 * @return response from the <code>Server</code>
 	 */
 	public String processClientInput(String clientInput, ServerThread thread) {
-		String errorMessage = "Sorry! I did not understand what you were trying to say. Please try again."
-				+ NEWLINE + NEWLINE + PROMPT;
+		// Set default error message
+		String defaultErrorMessage = "Sorry! I have no idea what you're trying to say. Please try again.\n\n";
 
+		// Get current user
+		User currentUser = getUserFromThreadId(thread.getThreadId());
+
+		// Get command
+		String[] clientInputArray = clientInput.split(" ");
 		try {
-			// Get user of thread that is asking
-			User currentUser = getUserFromThreadId(thread.getThreadId());
-
-			// Get command
-			Command command = Command.valueOf(clientInput.split(" ")[0]
-					.toUpperCase());
+			Command command = Command
+					.valueOf(clientInputArray[0].toUpperCase());
 
 			String str = "";
 			switch (command) {
 			case WHOELSE: // Displays name of other connected users
-				// Iterate through user database
 				Iterator<User> iter = userDatabase.values().iterator();
 				while (iter.hasNext()) {
 					User user = iter.next();
-					if (user.isOnline() && !user.equals(currentUser)) {
-						str += user.getUsername() + NEWLINE;
+					if (user.isOnline()
+							&& !user.getUsername().equals(
+									currentUser.getUsername())) {
+						str += user.getUsername() + "\n";
 					}
 				}
 
 				if (str.length() == 0) {
-					// No other users online
-					str = "Nobody else is here!" + NEWLINE;
+					str = "Nobody else is here. :(\n";
 				}
 
-				return str + NEWLINE + PROMPT;
+				return str + "\n";
 			case WHOLASTHR:
-				// TODO
-				break;
-			case BROADCAST:
-				// TODO
-				break;
-			case MESSAGE:
-				try {
-					String[] clientInputArr = clientInput.split(" ");
-
-					// Get user to send the message to
-					User toUser = userDatabase.get(clientInputArr[1]);
-					if (toUser == null) {
-						// User does not exist
-						str = "Sorry! " + clientInputArr[1]
-								+ " is not a valid user. Please try again!";
-					} else {
-						// Get the message
-						if (clientInputArr.length < 3) {
-							// There aren't any messages
-							str = "Please write a message to send to "
-									+ clientInput + ".";
-						} else {
-							// Send message
-							String messageStr = clientInputArr[2];
-							for (int i = 3; i < clientInputArr.length; i++) {
-								messageStr += " " + clientInputArr[i];
-							}
-							Message message = new Message(messageStr,
-									currentUser, new User[] { toUser });
-							sendMessage(message);
-						}
+				
+				iter = userDatabase.values().iterator();
+				while (iter.hasNext()) {
+					User user = iter.next();
+					int timePassedSinceLogin = (int) (((new Date()).getTime() - user.getLastLoggedIn()) / 1000);
+					if (timePassedSinceLogin < LAST_HOUR && !user.getUsername().equals(
+									currentUser.getUsername())) {
+						str += user.getUsername() + "\n";
 					}
-
-				} catch (IndexOutOfBoundsException e) {
-					// Message protocol not followed
-					str = "If you would like to send a message to a peer, please format your message:"
-							+ NEWLINE + "message <user> <message>";
+				}
+				
+				if (str.length() == 0) {
+					str = "Nobody was here within the last " + LAST_HOUR + " seconds. :(\n";
 				}
 
-				return str + NEWLINE + PROMPT;
-			case BLOCK:
-				// TODO
-				break;
-			case UNBLOCK:
-				// TODO
-				break;
-			case LOGOUT:
-				return "Goodbye!" + NEWLINE + EXIT;
-			default:
-				return errorMessage;
-			}
-		} catch (Exception e) {
-			// Did not understand command
-			return errorMessage;
-		}
+				return str + "\n";
+			case BROADCAST:
+				return "Unsupported action.";
+			case MESSAGE:
+				if (clientInputArray.length < 3) {
+					// Not the right arguments
+					str = "usage: message <user> <message>\nPlease try again.";
+				} else {
+					// Check if user exists
+					User toUser = userDatabase.get(clientInputArray[1]);
+					if (toUser == null) {
+						str = clientInputArray[1]
+								+ " is not a valid user.\nPlease try again.";
+					} else {
+						// Send the message
+						String messageStr = clientInputArray[2];
+						for (int i = 3; i < clientInputArray.length; i++) {
+							messageStr += " " + clientInputArray[i];
+						}
 
-		return errorMessage;
+						Message message = new Message(messageStr, currentUser,
+								new User[] { toUser });
+						sendMessage(message);
+					}
+				}
+				return str;
+			case BLOCK:
+				return "Unsupported action.";
+			case UNBLOCK:
+				return "Unsupported action.";
+			case LOGOUT:
+				return "Goodbye" + Utilities.EXIT;
+			default:
+				return defaultErrorMessage;
+			}
+
+		} catch (Exception e) {
+			// Could not understand client input
+			return defaultErrorMessage;
+		}
 	}
-	
-	/**
-	 * Sends a message.
-	 * 
-	 * @param message
-	 */
-	private void sendMessage(Message message) {
+
+	public void sendMessage(Message message) {
 		User[] toUsers = message.getToUsers();
 		for (User toUser : toUsers) {
 			toUser.addMessage(message);
-			
+
 			if (toUser.isOnline()) {
+				// User is online, so send the message immediately
 				ServerThread thread = onlineThreads.get(toUser.getThreadId());
-				thread.print(toUser.popMessage().getMessage());
+				thread.print(message.getMessage());
 			}
 		}
 	}
@@ -214,6 +216,7 @@ public class Server {
 	public boolean authenticateUser(String username, String password,
 			ServerThread thread) throws User.UserAlreadyLoggedInException,
 			User.IpAddressBlockedException {
+
 		if (!userDatabase.containsKey(username)) {
 			// Username does not exist
 			return false;
@@ -251,44 +254,13 @@ public class Server {
 		return null;
 	}
 
-	/**
-	 * Parses a port number in the form of a {@link String} into an integer.
-	 * 
-	 * @param portNumberStr
-	 *            string to parse into a port number
-	 * @return port number as an integer
-	 */
-	public static int parsePortNumber(String portNumberStr) {
-		int portNumber = -1;
-		try {
-			portNumber = Integer.parseInt(portNumberStr);
-		} catch (NumberFormatException e) {
-			error("port number must be an integer");
-		}
-		if (portNumber < 1 || portNumber > 65535) {
-			error("port number must a positive integer between 1 and 65535");
-		}
-		return portNumber;
-	}
-
-	/**
-	 * Prints the error message and then exits the program.
-	 * 
-	 * @param message
-	 *            error message
-	 */
-	public static void error(String message) {
-		System.err.println(message);
-		System.exit(1);
-	}
-
 	public static void main(String[] args) {
 		if (args.length < 1) {
-			error("usage: java Server <server_port_no>");
+			Utilities.error("usage: java Server <server_port_no>");
 		}
 
 		// Get port number
-		int portNumber = parsePortNumber(args[0]);
+		int portNumber = Utilities.parsePortNumber(args[0]);
 
 		// Create server
 		new Server(portNumber);
