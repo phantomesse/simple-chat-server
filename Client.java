@@ -210,54 +210,44 @@ public class Client {
 		}
 
 		// Print
-		String[] messageArr = message.split(" ");
-
 		printing = true;
 		try {
-			String str = "";
-			for (String messagePart : messageArr) {
-				// Check if message part matches an emoticon
-				int emoticon = matchEmoticon(messagePart);
-				if (emoticon < 0) {
-					// Not an emoticon
-					str += " " + messagePart;
-				} else {
-					// Print whatever is in the str
-					if (str.length() > 0) {
-						outputBoxDoc.insertString(outputBoxDoc.getLength(),
-								str.substring(1), style);
-					}
+			// Check if there is an emoticon
+			int[] emoticon = findEmoticon(message);
+			if (emoticon == null) {
+				// No emoticons, so print normally
+				outputBoxDoc.insertString(outputBoxDoc.getLength(), message,
+						style);
+			} else {
+				// There are emoticons
 
-					// Print emoticon
-					// outputBox.insertIcon(new ImageIcon(EMOTICON_FOLDER_PATH
-					// + emoticon + ".png"));
+				String temp = message;
+				
+				Style emoticonStyle = ((StyledDocument) outputBox
+						.getDocument()).addStyle("emoticonStyle", null);
 
-					Style emoticonStyle = ((StyledDocument) outputBox
-							.getDocument()).addStyle("emoticonStyle", null);
-					StyleConstants.setIcon(emoticonStyle, new ImageIcon(
-							EMOTICON_FOLDER_PATH + emoticon + ".png"));
+				while (emoticon != null) {
+					// Print up to emoticon
 					outputBoxDoc.insertString(outputBoxDoc.getLength(),
-							EMOTICONS[emoticon], emoticonStyle);
-
-					// Print rest of emoticon string
-					if (EMOTICONS[emoticon].length() < messagePart.length()) {
-						outputBoxDoc.insertString(outputBoxDoc.getLength(),
-								messagePart.substring(EMOTICONS[emoticon]
-										.length()), style);
-					}
-
-					// Reset str
-					str = "";
+							temp.substring(0, emoticon[0]), style);
+					
+					// Print emoticon
+					StyleConstants.setIcon(emoticonStyle, new ImageIcon(
+							EMOTICON_FOLDER_PATH + emoticon[1] + ".png"));
+					outputBoxDoc.insertString(outputBoxDoc.getLength(),
+							EMOTICONS[emoticon[1]], emoticonStyle);
+					
+					// Set temp to the rest of the message
+					temp = temp.substring(emoticon[0] + EMOTICONS[emoticon[1]].length());
+					
+					// Check again for emoticons
+					emoticon = findEmoticon(temp);
 				}
-			}
-
-			// Print str if not empty
-			if (str.length() > 0) {
-				outputBoxDoc.insertString(outputBoxDoc.getLength(),
-						str.substring(1) + (message.endsWith(" ") ? " " : ""),
+				
+				// No emoticons, so print normally
+				outputBoxDoc.insertString(outputBoxDoc.getLength(), temp,
 						style);
 			}
-
 		} catch (BadLocationException e) {
 			Utilities.error(e.getMessage());
 		}
@@ -269,18 +259,34 @@ public class Client {
 	}
 
 	/**
-	 * Matches a string to an emoticon
+	 * Finds the first instance of an emoticon in a string
 	 * 
 	 * @param str
-	 * @return index of emoticon in EMOTICONS array or -1 if does not match
+	 *            string to find emoticon in
+	 * @return an integer array { index of emoticon in string, index of emoticon
+	 *         in <code>EMOTICONS</code> array } or null if there are no
+	 *         emoticons
 	 */
-	private int matchEmoticon(String str) {
+	private int[] findEmoticon(String str) {
+		int firstIndex = -1;
+		int emoticon = -1;
 		for (int i = 0; i < EMOTICONS.length; i++) {
-			if (EMOTICONS[i].equals(str.trim())) {
-				return i;
+			int index = str.indexOf(EMOTICONS[i]);
+
+			if (index >= 0) {
+				// Found an emoticon
+				if (firstIndex == -1 || index < firstIndex) {
+					firstIndex = index;
+					emoticon = i;
+				}
 			}
 		}
-		return -1;
+
+		if (emoticon == -1) {
+			return null;
+		} else {
+			return new int[] { firstIndex, emoticon };
+		}
 	}
 
 	public static void main(String[] args) {

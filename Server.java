@@ -261,7 +261,7 @@ public class Server {
 						currentUser.blockUser(user);
 						str = "You have successfully blocked "
 								+ clientInputArray[1]
-								+ "from sending you messages.\n";
+								+ " from sending you messages.\n";
 					}
 				}
 
