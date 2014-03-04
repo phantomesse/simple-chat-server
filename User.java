@@ -1,6 +1,6 @@
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 
 public class User {
@@ -26,7 +26,7 @@ public class User {
 	private final static int MAX_LOGIN_ATTEMPTS = 3;
 
 	private LinkedList<Message> messages;
-	private ArrayList<User> blockedUsers;
+	private HashSet<User> blockedUsers;
 
 	public class UserAlreadyLoggedInException extends Exception {
 		private static final long serialVersionUID = 1L;
@@ -62,7 +62,7 @@ public class User {
 		loginAttempts = new HashMap<String, Integer>();
 
 		this.messages = new LinkedList<Message>();
-		this.blockedUsers = new ArrayList<User>();
+		this.blockedUsers = new HashSet<User>();
 	}
 
 	/**

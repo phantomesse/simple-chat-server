@@ -328,13 +328,14 @@ public class Server {
 				continue;
 			}
 
-			toUser.addMessage(message);
-
 			if (toUser.isOnline()) {
 				// User is online, so send the message immediately
 				ServerThread thread = onlineThreads.get(toUser.getThreadId());
 				thread.print(message.getFromUser().getUsername() + " says: "
 						+ message.getMessage() + "\n\n");
+			} else {
+				// Save message for offline messages
+				toUser.addMessage(message);
 			}
 		}
 	}
