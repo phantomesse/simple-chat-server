@@ -2,7 +2,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -17,6 +16,7 @@ public class Server {
 
 	public static final int BLOCK_TIME = 60; // Seconds
 	public static final int LAST_HOUR = 60 * 60; // Seconds
+	public static final int TIME_OUT = 60 * 30; // Seconds
 
 	private static final String USER_DATABASE_PATH = "user_pass.txt";
 
@@ -55,6 +55,38 @@ public class Server {
 		try {
 			ServerSocket listener = new ServerSocket(portNumber);
 			try {
+				// Create a thread that checks for time out
+				Thread timeoutCheckerThread = new Thread() {
+					public void run() {
+						while (true) {
+							// Check for inactive users
+							Iterator<User> iter = userDatabase.values()
+									.iterator();
+							while (iter.hasNext()) {
+								User user = iter.next();
+								if (user.isOnline() && user.getLastActive() > 0) {
+									// Check the last time this user was active
+									int timeSinceLastActive = (int) ((System.currentTimeMillis() - user.getLastActive()) / 1000);
+									if (timeSinceLastActive > TIME_OUT) {
+										// Kick user off
+										ServerThread serverThread = onlineThreads.get(user.getThreadId());
+										serverThread.print("Sorry! You have been inactive for too long" + Utilities.EXIT);
+									}
+								}
+							}
+
+							// Timeout for a second
+							try {
+								Thread.sleep(1000);
+							} catch (InterruptedException e) {
+								Utilities.error(e.getMessage());
+							}
+						}
+					}
+				};
+				timeoutCheckerThread.start();
+
+				// Listen for clients accepting
 				while (true) {
 					String threadId = UUID.randomUUID().toString();
 					ServerThread thread = new ServerThread(threadId,
@@ -106,6 +138,9 @@ public class Server {
 		// Get current user
 		User currentUser = getUserFromThreadId(thread.getThreadId());
 
+		// Update last active for current user
+		currentUser.updateLastActive();
+
 		// Get command
 		String[] clientInputArray = clientInput.split(" ");
 		try {
@@ -137,9 +172,10 @@ public class Server {
 				iter = userDatabase.values().iterator();
 				while (iter.hasNext()) {
 					User user = iter.next();
-					int timePassedSinceLogin = (int) (((new Date()).getTime() - user
+					int timePassedSinceLogin = (int) ((System.currentTimeMillis() - user
 							.getLastLoggedIn()) / 1000);
-					if (timePassedSinceLogin < LAST_HOUR
+					int timeSinceLastActive = (int) ((System.currentTimeMillis() - user.getLastActive()) / 1000);
+					if ((user.isOnline() || timePassedSinceLogin < LAST_HOUR || timeSinceLastActive < LAST_HOUR)
 							&& !user.getUsername().equals(
 									currentUser.getUsername())) {
 						str += user.getUsername() + "\n";
@@ -223,7 +259,9 @@ public class Server {
 					} else {
 						// Block user
 						currentUser.blockUser(user);
-						str = "You have successfully blocked " + clientInputArray[1] + "from sending you messages.\n";
+						str = "You have successfully blocked "
+								+ clientInputArray[1]
+								+ "from sending you messages.\n";
 					}
 				}
 
@@ -247,7 +285,8 @@ public class Server {
 						// Unblock user
 						boolean unblocked = currentUser.unblockUser(user);
 						if (unblocked) {
-							str = "You have successfully unblocked " + clientInputArray[1] + ".\n";
+							str = "You have successfully unblocked "
+									+ clientInputArray[1] + ".\n";
 						} else {
 							str = "You didn't block " + clientInputArray[1]
 									+ " to begin with!\n";
@@ -281,11 +320,14 @@ public class Server {
 			// Check if toUser has blocked fromUser
 			if (toUser.hasBlocked(message.getFromUser())) {
 				// Alert the fromUser that message could not be sent
-				ServerThread thread = onlineThreads.get(message.getFromUser().getThreadId());
-				thread.print("You cannot send any message to " + toUser.getUsername() + ". You have been blocked by the user.\n");
+				ServerThread thread = onlineThreads.get(message.getFromUser()
+						.getThreadId());
+				thread.print("You cannot send any message to "
+						+ toUser.getUsername()
+						+ ". You have been blocked by the user.\n");
 				continue;
 			}
-			
+
 			toUser.addMessage(message);
 
 			if (toUser.isOnline()) {

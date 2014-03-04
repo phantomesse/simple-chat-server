@@ -9,6 +9,7 @@ public class User {
 
 	private boolean isOnline;
 	private long lastLoggedIn;
+	private long lastActive;
 	private String threadId;
 
 	/**
@@ -54,6 +55,7 @@ public class User {
 
 		this.isOnline = false;
 		this.lastLoggedIn = -1;
+		this.lastActive = -1;
 		this.threadId = null;
 
 		blockedIpAddresses = new HashMap<String, Date>();
@@ -88,7 +90,7 @@ public class User {
 		// Check if this ip address is blocked
 		if (blockedIpAddresses.containsKey(ipAddress)) {
 			// Check if blocked time has expired
-			int timePassedSinceBlock = (int) (((new Date()).getTime() - blockedIpAddresses
+			int timePassedSinceBlock = (int) ((System.currentTimeMillis() - blockedIpAddresses
 					.get(ipAddress).getTime()) / 1000);
 			if (timePassedSinceBlock < Server.BLOCK_TIME) {
 				// Still blocked
@@ -152,6 +154,7 @@ public class User {
 		this.isOnline = true;
 		this.lastLoggedIn = System.currentTimeMillis();
 		this.threadId = threadId;
+		updateLastActive();
 	}
 
 	/**
@@ -160,6 +163,7 @@ public class User {
 	public void setOffline() {
 		this.isOnline = false;
 		this.threadId = null;
+		updateLastActive();
 	}
 
 	/**
@@ -226,5 +230,19 @@ public class User {
 	 */
 	public boolean hasBlocked(User user) {
 		return blockedUsers.contains(user);
+	}
+	
+	/**
+	 * Updates last active with current timestamp.
+	 */
+	public void updateLastActive() {
+		this.lastActive = System.currentTimeMillis();
+	}
+	
+	/**
+	 * @return timestamp of the last time this <code>User</code> was active
+	 */
+	public long getLastActive() {
+		return this.lastActive;
 	}
 }
