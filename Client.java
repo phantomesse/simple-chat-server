@@ -22,7 +22,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.DefaultCaret;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
@@ -59,8 +58,6 @@ public class Client {
 			// Communicate with server
 			String fromServer;
 			while ((fromServer = in.readLine()) != null) {
-				System.out.println(fromServer + "\n\n");
-				
 				// Decode message from server
 				String[] fromServerArr = Utilities.decodeMessage(fromServer);
 				fromServer = fromServerArr[1];
@@ -196,10 +193,7 @@ public class Client {
 	 * @param style
 	 */
 	private void print(String message, SimpleAttributeSet style) {
-		
-		System.out.println("trying to print " + message);
-
-		// Wait until stuff is done printing
+		// Wait until done printing previous messages
 		while (printing) {
 			try {
 				Thread.sleep(10);
@@ -207,19 +201,19 @@ public class Client {
 				Utilities.error(e.getMessage());
 			}
 		}
-
-		// Print
+		
 		printing = true;
+		
+		// Print
 		try {
 			outputBoxDoc.insertString(outputBoxDoc.getLength(), message, style);
 		} catch (BadLocationException e) {
 			Utilities.error(e.getMessage());
 		}
 
-		// Scroll down to the bottom of the output box
-		DefaultCaret caret = (DefaultCaret) outputBox.getCaret();
-		caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
-
+		// Scroll to bottom
+		outputBox.setCaretPosition(outputBox.getDocument().getLength());
+		
 		printing = false;
 	}
 

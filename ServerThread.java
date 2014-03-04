@@ -80,9 +80,7 @@ public class ServerThread extends Thread {
 
 			// Communicate with client
 			String fromClient;
-			while ((fromClient = in.readLine()) != null) {
-				System.out.println("client said: " + fromClient);
-				
+			while ((fromClient = in.readLine()) != null) {				
 				// Interpret client data and come up with correct response
 				String toClient = server.processClientInput(fromClient, this);
 				out.println(Utilities.encodeMessage("Command", toClient));
