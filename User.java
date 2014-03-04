@@ -106,9 +106,17 @@ public class User {
 				&& this.password.equals(password);
 
 		if (match) {
-			// Reset counter in loginAttempts
 			if (loginAttempts.containsKey(ipAddress)) {
+				int attempts = loginAttempts.get(ipAddress);
+				
+				// Reset counter in loginAttempts
 				loginAttempts.remove(ipAddress);
+				
+				if (attempts == MAX_LOGIN_ATTEMPTS) {
+					// Already attempted max times
+					blockedIpAddresses.put(ipAddress, new Date());
+					throw new IpAddressBlockedException(Server.BLOCK_TIME);
+				}
 			}
 
 			return match;

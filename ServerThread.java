@@ -81,7 +81,7 @@ public class ServerThread extends Thread {
 					str = "Sorry! " + username
 							+ " has been blocked from ip address " + ipAddress
 							+ ".\nPlease wait " + e.getSecondsLeft()
-							+ " seconds before attempting to login again."
+							+ " seconds before attempting to login again"
 							+ Utilities.EXIT;
 					out.println(Utilities.encodeMessage("", str));
 					break;
