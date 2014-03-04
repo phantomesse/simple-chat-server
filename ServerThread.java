@@ -51,8 +51,12 @@ public class ServerThread extends Thread {
 
 					if (authenticated) {
 						// User authenticated!
+						
+						// Get offline messages if any
+						String offlineMessages = server.getOfflineMessages(username);
+						
 						out.println(Utilities.encodeMessage("Command",
-								"\nWelcome to simple chat server!\n\n"));
+								"\nWelcome to simple chat server!\n" + offlineMessages));						
 					} else {
 						// User not authenticated
 						str = "Sorry! Incorrect username and password combination.";
@@ -118,6 +122,6 @@ public class ServerThread extends Thread {
 	 * @param message
 	 */
 	public void print(String message) {
-		out.println(message);
+		out.println(Utilities.encodeMessage("Command", message));
 	}
 }

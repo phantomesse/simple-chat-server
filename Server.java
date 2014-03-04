@@ -147,17 +147,22 @@ public class Server {
 
 				return str + "\n";
 			case BROADCAST:
+				if (clientInputArray.length < 2) {
+					// Not the right arguments
+					str = "usage: broadcast <message>\nPlease try again.\n\n";
+				}
+				
 				return "Unsupported action.";
 			case MESSAGE:
 				if (clientInputArray.length < 3) {
 					// Not the right arguments
-					str = "usage: message <user> <message>\nPlease try again.";
+					str = "usage: message <user> <message>\nPlease try again.\n\n";
 				} else {
 					// Check if user exists
 					User toUser = userDatabase.get(clientInputArray[1]);
 					if (toUser == null) {
 						str = clientInputArray[1]
-								+ " is not a valid user.\nPlease try again.";
+								+ " is not a valid user.\nPlease try again.\n\n";
 					} else {
 						// Send the message
 						String messageStr = clientInputArray[2];
@@ -172,9 +177,9 @@ public class Server {
 				}
 				return str;
 			case BLOCK:
-				return "Unsupported action.";
+				return "Unsupported action.\n\n";
 			case UNBLOCK:
-				return "Unsupported action.";
+				return "Unsupported action.\n\n";
 			case LOGOUT:
 				return "Goodbye" + Utilities.EXIT;
 			default:
@@ -187,6 +192,11 @@ public class Server {
 		}
 	}
 
+	/**
+	 * Sends a {@link Message}.
+	 * 
+	 * @param message
+	 */
 	public void sendMessage(Message message) {
 		User[] toUsers = message.getToUsers();
 		for (User toUser : toUsers) {
@@ -195,9 +205,28 @@ public class Server {
 			if (toUser.isOnline()) {
 				// User is online, so send the message immediately
 				ServerThread thread = onlineThreads.get(toUser.getThreadId());
-				thread.print(message.getMessage());
+				thread.print(message.getFromUser().getUsername() + " says: " + message.getMessage() + "\n\n");
 			}
 		}
+	}
+	
+	/**
+	 * Retrives offline messages for a given username.
+	 * 
+	 * @param username
+	 * @return all offline messages formatted in a {@link String}
+	 */
+	public String getOfflineMessages(String username) {
+		User user = userDatabase.get(username);
+		
+		String str = "";
+		Message message = user.popMessage();
+		while (message != null) {
+			str += message.getFromUser().getUsername() + " said: " + message.getMessage() + "\n";
+			message = user.popMessage();
+		}
+		
+		return str.length() == 0? "No offline messages!\n\n" : str + "\n";
 	}
 
 	/**

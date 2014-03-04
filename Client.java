@@ -84,7 +84,7 @@ public class Client {
 					for (int i = 0; i < COUNTDOWN; i++) {
 						print(".", null);
 						try {
-							Thread.sleep(1000);
+							Thread.sleep(600);
 						} catch (InterruptedException e) {
 							Utilities.error(e.getMessage());
 						}
